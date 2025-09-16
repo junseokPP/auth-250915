@@ -126,8 +126,7 @@ public class ApiV1CommentControllerTest {
                 .andExpect(jsonPath("$.data.commentDto.modifyDate").exists())
                 .andExpect(jsonPath("$.data.commentDto.content").value(content))
                 .andExpect(jsonPath("$.data.commentDto.authorId").value(author.getId()))
-                .andExpect(jsonPath("$.data.commentDto.authorName").value(author.getName()))
-                .andExpect(jsonPath("$.data.commentDto.content").value(content));
+                .andExpect(jsonPath("$.data.commentDto.authorName").value(author.getName()));
     }
 
     @Test
