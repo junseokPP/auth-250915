@@ -17,5 +17,6 @@ public class MemberService {
 
     public Member join(String username, String password, String nickname) {
         Member member = new Member(username,password,nickname);
+        return memberRepository.save(member);
     }
 }
