@@ -1,0 +1,77 @@
+package com.rest1.domain.member.member.controller;
+
+
+import com.rest1.domain.member.member.entity.Member;
+import com.rest1.domain.member.member.repository.MemberRepository;
+import com.rest1.domain.post.comment.controller.ApiV1CommentController;
+import com.rest1.domain.post.comment.entity.Comment;
+import com.rest1.domain.post.post.controller.ApiV1PostController;
+import com.rest1.domain.post.post.entity.Post;
+import com.rest1.domain.post.post.repository.PostRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.annotation.Transactional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsInRelativeOrder;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@SpringBootTest
+@ActiveProfiles("test")
+@AutoConfigureMockMvc
+@Transactional
+public class ApiV1MemberControllerTest {
+
+    @Autowired
+    private MockMvc mvc;
+
+
+    @Autowired
+    private MemberRepository memberRepository;
+
+    @Test
+    @DisplayName("회원 가입")
+    void t3() throws Exception {
+
+        String username = "newUser";
+        String password = "1234";
+        String nickname = "새유저";
+
+        Member author = memberRepository.findByUsername("user1").get();
+
+        ResultActions resultActions = mvc
+                .perform(
+                        post("/api/v1/members")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "username": "%s",
+                                            "password": "%s",
+                                            "nickname": "%s"
+                                        }
+                                        """.formatted(username,password,nickname))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("join"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.resultCode").value("201-1"))
+                .andExpect(jsonPath("$.msg").value("회원가입이 완료되었습니다. %s님 환영합니다".formatted(nickname)))
+                .andExpect(jsonPath("$.data.memberDto.id").value(6))
+                .andExpect(jsonPath("$.data.memberDto.createDate").exists())
+                .andExpect(jsonPath("$.data.memberDto.modifyDate").exists())
+                .andExpect(jsonPath("$.data.memberDto.name").value("새유저"));
+    }
+
+}
