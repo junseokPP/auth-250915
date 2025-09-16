@@ -1,6 +1,7 @@
 package com.rest1.domain.post.comment.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.rest1.domain.member.member.entity.Member;
 import com.rest1.domain.post.post.entity.Post;
 import com.rest1.global.jpa.entity.BaseEntity;
 import jakarta.persistence.Entity;
@@ -10,8 +11,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Getter
 public class Comment extends BaseEntity {
 
@@ -19,6 +20,15 @@ public class Comment extends BaseEntity {
     @ManyToOne
     @JsonIgnore
     private Post post;
+
+    @ManyToOne
+    private Member author;
+
+    public Comment( Member author,String content, Post post) {
+        this.content = content;
+        this.post = post;
+        this.author = author;
+    }
 
     public void update(String content) {
         this.content = content;
