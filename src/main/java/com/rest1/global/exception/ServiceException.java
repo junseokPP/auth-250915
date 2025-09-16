@@ -7,7 +7,6 @@ public class ServiceException extends RuntimeException {
 
     public ServiceException(String resultCode, String msg) {
         super("%s : %s".formatted(resultCode, msg));
-
         this.resultCode = resultCode;
         this.msg = msg;
     }
@@ -19,4 +18,5 @@ public class ServiceException extends RuntimeException {
     public String getMsg() {
         return msg;
     }
+
 }
