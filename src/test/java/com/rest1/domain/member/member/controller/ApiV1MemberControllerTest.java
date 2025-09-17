@@ -75,7 +75,7 @@ public class ApiV1MemberControllerTest {
 
         ResultActions resultActions = mvc
                 .perform(
-                        post("/api/v1/members")
+                        post("/api/v1/members/join")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -95,6 +95,7 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("409-1"))
                 .andExpect(jsonPath("$.msg").value("이미 사용중인 아이디입니다."));
     }
+
     @Test
     @DisplayName("로그인")
     void t3() throws Exception {
@@ -129,5 +130,8 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.data.memberDto.createDate").value(member.getCreateDate().toString()))
                 .andExpect(jsonPath("$.data.memberDto.modifyDate").value(member.getModifyDate().toString()))
                 .andExpect(jsonPath("$.data.memberDto.name").value(member.getName()));
+
     }
+
+
 }
