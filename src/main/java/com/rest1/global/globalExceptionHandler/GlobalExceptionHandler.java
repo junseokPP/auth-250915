@@ -8,6 +8,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.util.Comparator;
 import java.util.NoSuchElementException;
@@ -58,6 +60,14 @@ public class GlobalExceptionHandler {
         return new RsData<Void>(
                 e.getResultCode(),
                 e.getMsg()       // ← 순수 메시지만
+        );
+    }
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    @ResponseBody
+    public RsData<Void> handleException(HandlerMethodValidationException e) {
+        return new RsData<Void>(
+                "400-3",
+                "apiKey가 없습니다."// ← 순수 메시지만
         );
     }
 

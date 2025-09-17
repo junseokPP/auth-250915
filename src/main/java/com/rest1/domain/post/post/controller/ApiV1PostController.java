@@ -2,7 +2,6 @@ package com.rest1.domain.post.post.controller;
 
 import com.rest1.domain.member.member.entity.Member;
 import com.rest1.domain.member.member.service.MemberService;
-import com.rest1.domain.post.comment.entity.Comment;
 import com.rest1.domain.post.post.dto.PostDto;
 import com.rest1.domain.post.post.entity.Post;
 import com.rest1.domain.post.post.service.PostService;
@@ -88,13 +87,13 @@ public class ApiV1PostController {
     @Operation(summary = "글 작성")
     public RsData<PostWriteResBody> createItem(
             @RequestBody @Valid PostWriteReqBody reqBody,
-            @NotBlank @Size(min=30, max = 40) String apiKey
+            @RequestHeader("Authorization") @NotBlank @Size(min=30, max=50) String apiKey
     ) {
 
-        Member actor = memberService.findByApiKey(apiKey).orElseThrow(()->new ServiceException("401-4","API 키가 올바르지 않습니다."));
+        String authorization = apiKey.replace("Bearer ", "");
 
-        Post post = postService.write(actor,reqBody.title, reqBody.content);
-        long totalCount = postService.count();
+        Member actor = memberService.findByApiKey(authorization).orElseThrow(() -> new ServiceException("401-1", "API 키가 올바르지 않습니다."));
+        Post post = postService.write(actor, reqBody.title, reqBody.content);
 
         return new RsData<>(
                 "201-1",
