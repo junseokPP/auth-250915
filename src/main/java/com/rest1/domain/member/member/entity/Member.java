@@ -1,15 +1,11 @@
 package com.rest1.domain.member.member.entity;
 
-import com.rest1.domain.post.comment.entity.Comment;
 import com.rest1.global.jpa.entity.BaseEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @NoArgsConstructor
@@ -31,7 +27,12 @@ public class Member extends BaseEntity {
         this.apiKey = UUID.randomUUID().toString();
     }
 
-    public String getName(){
+    public String getName() {
         return nickname;
     }
+
+    public void updateApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
 }
