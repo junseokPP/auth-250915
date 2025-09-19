@@ -1,206 +1,125 @@
-package com.rest1.domain.member.member.controller;
+package com.rest1.domain.member.member.service;
 
 import com.rest1.domain.member.member.entity.Member;
 import com.rest1.domain.member.member.repository.MemberRepository;
-import jakarta.servlet.http.Cookie;
-import org.hamcrest.Matchers;
+import com.rest1.standard.ut.Ut;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureMockMvc
 @Transactional
-public class ApiV1MemberControllerTest {
-
+public class AuthTokenServiceTest {
     @Autowired
-    private MockMvc mvc;
+    private AuthTokenService authTokenService;
 
     @Autowired
     private MemberRepository memberRepository;
 
-    @Test
-    @DisplayName("회원 가입")
-    void t1() throws Exception {
+    @Value("${custom.jwt.secretPattern}")
+    private String secretPattern;
 
-        String username = "newUser";
-        String password = "1234";
-        String nickname = "새유저";
-
-        ResultActions resultActions = mvc
-                .perform(
-                        post("/api/v1/members/join")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "username": "%s",
-                                            "password": "%s",
-                                            "nickname": "%s"
-                                        }
-                                        """.formatted(username, password, nickname)
-                                )
-                )
-                .andDo(print());
-
-        resultActions
-                .andExpect(handler().handlerType(ApiV1MemberController.class))
-                .andExpect(handler().methodName("join"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.resultCode").value("201-1"))
-                .andExpect(jsonPath("$.msg").value("회원가입이 완료되었습니다. %s님 환영합니다.".formatted(nickname)))
-                .andExpect(jsonPath("$.data.memberDto.id").value(6))
-                .andExpect(jsonPath("$.data.memberDto.createDate").exists())
-                .andExpect(jsonPath("$.data.memberDto.modifyDate").exists())
-                .andExpect(jsonPath("$.data.memberDto.name").value(nickname));
-    }
-
+    @Value("${custom.jwt.expireSeconds}")
+    private long expireSeconds;
 
     @Test
-    @DisplayName("회원 가입, 이미 존재하는 username으로 가입 - user1로 가입")
-    void t2() throws Exception {
-
-        String username = "user1";
-        String password = "1234";
-        String nickname = "새유저";
-
-        ResultActions resultActions = mvc
-                .perform(
-                        post("/api/v1/members/join")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "username": "%s",
-                                            "password": "%s",
-                                            "nickname": "%s"
-                                        }
-                                        """.formatted(username, password, nickname)
-                                )
-                )
-                .andDo(print());
-
-        resultActions
-                .andExpect(handler().handlerType(ApiV1MemberController.class))
-                .andExpect(handler().methodName("join"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.resultCode").value("409-1"))
-                .andExpect(jsonPath("$.msg").value("이미 사용중인 아이디입니다."));
+    @DisplayName("authTokenService 서비스가 존재한다.")
+    void t1() {
+        assertThat(authTokenService).isNotNull();
     }
 
     @Test
-    @DisplayName("로그인")
-    void t3() throws Exception {
+    @DisplayName("jjwt 최신 방식으로 JWT 생성, {name=\"Paul\", age=23}")
+    void t2() {
+        // 토큰 만료기간: 1년
+        SecretKey secretKey = Keys.hmacShaKeyFor(secretPattern.getBytes(StandardCharsets.UTF_8));
 
-        String username = "user1";
-        String password = "1234";
+        // 발행 시간과 만료 시간 설정
+        Date issuedAt = new Date();
+        Date expiration = new Date(issuedAt.getTime() + expireSeconds);
 
-        ResultActions resultActions = mvc
-                .perform(
-                        post("/api/v1/members/login")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "username": "%s",
-                                            "password": "%s"
-                                        }
-                                        """.formatted(username, password)
-                                )
-                )
-                .andDo(print());
+        Map<String, Object> payload = Map.of("name", "Paul", "age", 23);
 
-        Member member = memberRepository.findByUsername(username).get();
+        String jwt = Jwts.builder()
+                .claims(payload) // 내용
+                .issuedAt(issuedAt) // 생성날짜
+                .expiration(expiration) // 만료날짜
+                .signWith(secretKey) // 키 서명
+                .compact();
 
-        resultActions
-                .andExpect(handler().handlerType(ApiV1MemberController.class))
-                .andExpect(handler().methodName("login"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("%s님 환영합니다.".formatted(username)))
-                .andExpect(jsonPath("$.data.apiKey").exists())
-                .andExpect(jsonPath("$.data.memberDto.id").value(member.getId()))
-                .andExpect(jsonPath("$.data.memberDto.createDate").value(Matchers.startsWith(member.getCreateDate().toString().substring(0, 20))))
-                .andExpect(jsonPath("$.data.memberDto.modifyDate").value(Matchers.startsWith(member.getModifyDate().toString().substring(0, 20))))
-                .andExpect(jsonPath("$.data.memberDto.name").value(member.getName()));
+        Map<String, Object> parsedPayload = (Map<String, Object>) Jwts
+                .parser()
+                .verifyWith(secretKey)
+                .build()
+                .parse(jwt)
+                .getPayload();
 
-        resultActions.andExpect(
-                result -> {
-                    Cookie apiKeyCookie = result.getResponse().getCookie("apiKey");
-                    assertThat(apiKeyCookie).isNotNull();
+        assertThat(parsedPayload)
+                .containsAllEntriesOf(payload);
 
-                    assertThat(apiKeyCookie.getPath()).isEqualTo("/");
-                    assertThat(apiKeyCookie.getDomain()).isEqualTo("localhost");
-                    assertThat(apiKeyCookie.isHttpOnly()).isEqualTo(true);
+        assertThat(jwt).isNotBlank();
 
-                    if(apiKeyCookie != null) {
-                        assertThat(apiKeyCookie.getValue()).isNotBlank();
-                    }
-                }
+        System.out.println("jwt = " + jwt);
+    }
+
+    @Test
+    @DisplayName("Ut.jwt.toString 를 통해서 JWT 생성, {name=\"Paul\", age=23}")
+    void t3() {
+
+        Map<String, Object> payload =  Map.of("name", "Paul", "age", 23);
+
+        String jwt = Ut.jwt.toString(
+                secretPattern,
+                expireSeconds,
+                payload
         );
 
+        assertThat(jwt).isNotBlank();
+
+        boolean validResult = Ut.jwt.isValid(jwt, secretPattern);
+        assertThat(validResult).isTrue();
+
+        Map<String, Object> parsedPayload = Ut.jwt.payloadOrNull(jwt, secretPattern);
+
+        assertThat(parsedPayload)
+                .containsAllEntriesOf(payload);
+
+        System.out.println("jwt = " + jwt);
     }
 
     @Test
-    @DisplayName("로그아웃")
-    void t4() throws Exception {
-        ResultActions resultActions = mvc
-                .perform(
-                        delete("/api/v1/members/logout")
+    @DisplayName("AuthTokenService를 통해서 accessToken 생성")
+    void t4() {
+
+        Member member1 = memberRepository.findByUsername("user3").get();
+        String accessToken = authTokenService.genAccessToken(member1);
+        assertThat(accessToken).isNotBlank();
+
+        Map<String, Object> payload = authTokenService.payloadOrNull(accessToken);
+
+        assertThat(payload).containsAllEntriesOf(
+                Map.of(
+                        "id", member1.getId(),
+                        "username", member1.getUsername()
                 )
-                .andDo(print());
+        );
 
-        resultActions
-                .andExpect(handler().handlerType(ApiV1MemberController.class))
-                .andExpect(handler().methodName("logout"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("로그아웃 되었습니다."))
-                .andExpect(result -> {
-                    Cookie apiKeyCookie = result.getResponse().getCookie("apiKey");
-                    assertThat(apiKeyCookie.getValue()).isEmpty();
-                    assertThat(apiKeyCookie.getMaxAge()).isEqualTo(0);
-                    assertThat(apiKeyCookie.getPath()).isEqualTo("/");
-                    assertThat(apiKeyCookie.isHttpOnly()).isTrue();
-                });
+        System.out.println("accessToken = " + accessToken);
+
+
     }
-
-    @Test
-    @DisplayName("내 정보")
-    void t5() throws Exception {
-        Member actor = memberRepository.findByUsername("user1").get();
-        String actorApiKey = actor.getApiKey();
-
-        ResultActions resultActions = mvc
-                .perform(
-                        get("/api/v1/members/me")
-                                .header("Authorization", "Bearer " + actorApiKey)
-                )
-                .andDo(print());
-
-        Member member = memberRepository.findByUsername("user1").get();
-
-        resultActions
-                .andExpect(handler().handlerType(ApiV1MemberController.class))
-                .andExpect(handler().methodName("me"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("OK"))
-                .andExpect(jsonPath("$.data").exists())
-                .andExpect(jsonPath("$.data.memberDto.id").value(member.getId()))
-                .andExpect(jsonPath("$.data.memberDto.createDate").value(member.getCreateDate().toString()))
-                .andExpect(jsonPath("$.data.memberDto.modifyDate").value(member.getModifyDate().toString()))
-                .andExpect(jsonPath("$.data.memberDto.name").value(member.getName()));
-    }
-
 }
